@@ -8,9 +8,20 @@ log:
     time: "@timestamp"
     msg: message
 
-mongo:
-  uri: mongodb://localhost:27017
-  database: masterdata
+firestore:
+  credentials: '
+    {
+      "type": "service_account",
+      "project_id": "go-firestore-rest-api",
+      "private_key_id": "6b1620dcbaa47bfc0ddda412cf8612519b41c875",
+      "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCckrKXCNNM8OQg\nQ3PUkX74ckRzVvD15I3GUow5hhb0aVW7rzA+ZvYFxRcpq9QZlJAWFc+filIorT7O\nDYW4xt0u+yzLCDa+tIejvL/ecQ7f2GEmiN4JUgMHHNP+zgMaC3rzbUuDUmjaEjjz\nrMqdjd8elg9ZY91rw5gkMOelG8ifYx/fd4H9gUwAejtIscqZ2KZRSY5lYsJlDRbI\nS7fCFMFZKlyTj576w3BI84YrwaifMF/Ogf87fz6Wf6DS16Aog7eKzhrlRGKd+yqL\n7wFoPK4nQdqEr0Cnr2mhUKTwSavQHB4kZlDwiZSwKY8AFo/WjNPekqUhNlPcJu3q\nCatbr2wHAgMBAAECggEAE42SYKAz2xZI4ZVANYScqaQuKNqWVEQ1nFXEuI5RTDaM\nrq1DG206PiA4iKCyZ9C7abam62ftDggMoX440TQsfRMrAIlHD5Z19fG6uFRqz3OI\ni7UTSBtbe3Doh0KXn+ddHwyVczyVvDNYX2iYaQfwRt6QjiZANEFZ553KipOnVe1r\nWHa99twnxt+XWHoJUHO1RyI6FrNOw+K+Coj1reQnS7/1QXaixe0/p0Wwo6qdUsEy\n2ftm8N7UsLCa5kWT3x8/XJfi50VvgleHSfGsW+Vj/tojljv0enXbwFtFqRs44evv\nwhDI4qOclUy3hNMbkc8d54S2zvWbRuv+BsklJU8gIQKBgQDTK2zyi+uXYR+DJYL6\nWqbrQoVkzmU7Sq2BQMq5/m/BncRPkAEdaQ1DyLpM6fwNp/FntYcu4FGI76bvJsji\nnAwRalAqOzu4d8YnUNbsaHFB+wELmA/a/oymyNL7pOnfjhq+QQlF0TJsV/ZZKFWG\nz7aKSGvKVxhvu6oAHK6r3GqkEQKBgQC90BM+GUeXes8E6l4lQlJNBatHLqlci/a8\n/r2NOd//CVaxSjWiYmf/zANNC6lG7X3KTI/PVhZQ5TVFzd2wpnJA9tymDDrP67QH\nSEjg7sQDQ9gM+yvhni1xCyxIU8gVVQdhOP/ih47RPAoQGmFRm48YJ+TTBYjOhGq3\nL2EcLSxGlwKBgQDD4JkrlxyOi7nGVepbvfDtcwP3UPhX+lpc9bPWuSwDBgwN3T8b\nf9GdGbmuFLEIHctwbtMZaVxYUCyh03Etup/7G4mG0vD/mKKG35atLeg40tLSZVf3\nxHzFTK1gXUXPZ6po5jzqtTU3iJRreV10MoJZXPoXc5ioNARqHDDuHAQTcQKBgFQB\nnBKWw52iJ69IPsSEtsIJ6UUGvMQN2fTJVYEEhUNtkaXDbztgDCEk3K0jpRaUE2EO\nQ3OC6TuCRfKP6za8Y8Kmvv7qWLke2z2B22dZpPzA8QTFwSUIiZoHVODp25q9WBfK\nT02lqyqlRNrdogapL0qElXxjbang5w4N9Q+wWnEfAoGAFnDhTzlb3nsYAvVe8OMP\nsm6x4u0OZRkJ+Z+m6CA19RgV0snOXwH8To9HzXFgnLA7l0EDgqEAgas2PE16nJtb\nEWABTOcXMdmlxLPinp8ejpb6eIaI+uIBF6A8my/sIB+XPZvKWV+FTnySv5KDJ3RL\nOI5ZGIDQDdE+QOqwu4Qjmzk=\n-----END PRIVATE KEY-----\n",
+      "client_email": "firebase-adminsdk-srrcy@go-firestore-rest-api.iam.gserviceaccount.com",
+      "client_id": "101673912751802204503",
+      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+      "token_uri": "https://oauth2.googleapis.com/token",
+      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+      "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-srrcy%40go-firestore-rest-api.iam.gserviceaccount.com"
+    }'
 
 batch_worker:
   batch_size: 100
