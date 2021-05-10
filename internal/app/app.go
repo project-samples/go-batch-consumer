@@ -7,8 +7,8 @@ import (
 	"github.com/core-go/health"
 	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
-	"github.com/core-go/mq/kafka"
 	"github.com/core-go/mq/log"
+	"github.com/core-go/mq/pubsub"
 	"github.com/core-go/mq/validator"
 	val "github.com/go-playground/validator/v10"
 )
@@ -34,7 +34,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		logInfo = log.InfoMsg
 	}
 
-	receiver, er2 := kafka.NewReaderByConfig(root.Reader, true)
+	receiver, er2 := pubsub.NewSubscriberByConfig(ctx, root.Sub, true)
 	if er2 != nil {
 		log.Error(ctx, "Cannot create a new receiver. Error: "+er2.Error())
 		return nil, er2
@@ -45,19 +45,19 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	batchHandler := mq.NewBatchHandler(userType, batchWriter.Write, logError, logInfo)
 
 	mongoChecker := mongo.NewHealthChecker(db)
-	receiverChecker := kafka.NewKafkaHealthChecker(root.Reader.Brokers, "kafka_reader")
+	receiverChecker := pubsub.NewSubHealthChecker("pubsub_subscriber", receiver.Client, root.Sub.SubscriptionId)
 	var healthHandler *health.HealthHandler
 	var batchWorker mq.BatchWorker
 
-	if root.Writer != nil {
-		sender, er3 := kafka.NewWriterByConfig(*root.Writer)
+	if root.Pub != nil {
+		sender, er3 := pubsub.NewPublisherByConfig(ctx, *root.Pub)
 		if er3 != nil {
 			log.Error(ctx, "Cannot new a new sender. Error: "+er3.Error())
 			return nil, er3
 		}
-		retryService := mq.NewRetryService(sender.Write, logError, logInfo)
+		retryService := mq.NewRetryService(sender.Publish, logError, logInfo)
 		batchWorker = mq.NewDefaultBatchWorker(root.BatchWorkerConfig, batchHandler.Handle, retryService.Retry, logError, logInfo)
-		senderChecker := kafka.NewKafkaHealthChecker(root.Writer.Brokers, "kafka_writer")
+		senderChecker := pubsub.NewPubHealthChecker("pubsub_publisher", sender.Client, root.Pub.TopicId)
 		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		batchWorker = mq.NewDefaultBatchWorker(root.BatchWorkerConfig, batchHandler.Handle, nil, logError, logInfo)
@@ -70,7 +70,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	return &ApplicationContext{
 		HealthHandler: healthHandler,
 		BatchWorker:   batchWorker,
-		Receive:       receiver.Read,
+		Receive:       receiver.Subscribe,
 		Subscription:  subscription,
 	}, nil
 }
