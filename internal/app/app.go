@@ -10,11 +10,11 @@ import (
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/pubsub"
 	"github.com/core-go/mq/validator"
-	val "github.com/go-playground/validator/v10"
+	v "github.com/go-playground/validator/v10"
 )
 
 type ApplicationContext struct {
-	HealthHandler *health.HealthHandler
+	HealthHandler *health.Handler
 	BatchWorker   mq.BatchWorker
 	Receive       func(ctx context.Context, handle func(context.Context, *mq.Message, error) error)
 	Subscription  *mq.Subscription
@@ -22,7 +22,7 @@ type ApplicationContext struct {
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
-	db, er1 := mongo.SetupMongo(ctx, root.Mongo)
+	db, er1 := mongo.Setup(ctx, root.Mongo)
 	if er1 != nil {
 		log.Error(ctx, "Cannot connect to MongoDB. Error: "+er1.Error())
 		return nil, er1
@@ -41,12 +41,12 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	}
 
 	userType := reflect.TypeOf(User{})
-	batchWriter := mongo.NewBatchInserter(db, "user")
+	batchWriter := mongo.NewBatchWriter(db, "user", userType)
 	batchHandler := mq.NewBatchHandler(userType, batchWriter.Write, logError, logInfo)
 
 	mongoChecker := mongo.NewHealthChecker(db)
 	receiverChecker := pubsub.NewSubHealthChecker("pubsub_subscriber", receiver.Client, root.Sub.SubscriptionId)
-	var healthHandler *health.HealthHandler
+	var healthHandler *health.Handler
 	var batchWorker mq.BatchWorker
 
 	if root.Pub != nil {
@@ -58,10 +58,10 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		retryService := mq.NewRetryService(sender.Publish, logError, logInfo)
 		batchWorker = mq.NewDefaultBatchWorker(root.BatchWorkerConfig, batchHandler.Handle, retryService.Retry, logError, logInfo)
 		senderChecker := pubsub.NewPubHealthChecker("pubsub_publisher", sender.Client, root.Pub.TopicId)
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker, senderChecker)
+		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
 	} else {
 		batchWorker = mq.NewDefaultBatchWorker(root.BatchWorkerConfig, batchHandler.Handle, nil, logError, logInfo)
-		healthHandler = health.NewHealthHandler(mongoChecker, receiverChecker)
+		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
 	}
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	validator := mq.NewValidator(userType, checker.Check)
@@ -80,6 +80,6 @@ func NewUserValidator() validator.Validator {
 	val.CustomValidateList = append(val.CustomValidateList, validator.CustomValidate{Fn: CheckActive, Tag: "active"})
 	return val
 }
-func CheckActive(fl val.FieldLevel) bool {
+func CheckActive(fl v.FieldLevel) bool {
 	return fl.Field().Bool()
 }
