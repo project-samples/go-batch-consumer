@@ -5,12 +5,13 @@ import (
 	"reflect"
 
 	"github.com/core-go/health"
-	"github.com/core-go/mongo"
 	"github.com/core-go/mq"
 	"github.com/core-go/mq/log"
 	"github.com/core-go/mq/pubsub"
 	"github.com/core-go/mq/validator"
+	"github.com/core-go/sql"
 	v "github.com/go-playground/validator/v10"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type ApplicationContext struct {
@@ -22,9 +23,9 @@ type ApplicationContext struct {
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	log.Initialize(root.Log)
-	db, er1 := mongo.Setup(ctx, root.Mongo)
+	db, er1 := sql.OpenByConfig(root.Sql)
 	if er1 != nil {
-		log.Error(ctx, "Cannot connect to MongoDB. Error: "+er1.Error())
+		log.Error(ctx, "Cannot connect to sql DB. Error: "+er1.Error())
 		return nil, er1
 	}
 
@@ -41,10 +42,10 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	}
 
 	userType := reflect.TypeOf(User{})
-	batchWriter := mongo.NewBatchWriter(db, "user", userType)
+	batchWriter := sql.NewBatchInserter(db, "users")
 	batchHandler := mq.NewBatchHandler(userType, batchWriter.Write, logError, logInfo)
 
-	mongoChecker := mongo.NewHealthChecker(db)
+	sqlChecker := sql.NewHealthChecker(db)
 	receiverChecker := pubsub.NewSubHealthChecker("pubsub_subscriber", receiver.Client, root.Sub.SubscriptionId)
 	var healthHandler *health.Handler
 	var batchWorker mq.BatchWorker
@@ -58,10 +59,10 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		retryService := mq.NewRetryService(sender.Publish, logError, logInfo)
 		batchWorker = mq.NewDefaultBatchWorker(root.BatchWorkerConfig, batchHandler.Handle, retryService.Retry, logError, logInfo)
 		senderChecker := pubsub.NewPubHealthChecker("pubsub_publisher", sender.Client, root.Pub.TopicId)
-		healthHandler = health.NewHandler(mongoChecker, receiverChecker, senderChecker)
+		healthHandler = health.NewHandler(sqlChecker, receiverChecker, senderChecker)
 	} else {
 		batchWorker = mq.NewDefaultBatchWorker(root.BatchWorkerConfig, batchHandler.Handle, nil, logError, logInfo)
-		healthHandler = health.NewHandler(mongoChecker, receiverChecker)
+		healthHandler = health.NewHandler(sqlChecker, receiverChecker)
 	}
 	checker := validator.NewErrorChecker(NewUserValidator().Validate)
 	validator := mq.NewValidator(userType, checker.Check)
